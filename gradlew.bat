@@ -35,6 +35,22 @@ set APP_HOME=%DIRNAME%
 @rem Resolve any "." and ".." in APP_HOME to make it shorter.
 for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 
+@rem Fall back to the workspace-local toolchains used by the repository bootstrap.
+@rem System-provided JAVA_HOME still takes precedence when it is configured.
+if not defined JAVA_HOME (
+    for /d %%i in ("%APP_HOME%.tools\jdk25\*") do (
+        if exist "%%~fi\bin\java.exe" set "JAVA_HOME=%%~fi"
+    )
+)
+
+@rem Prefer the reviewed Node.js 24 workspace toolchain when it is available.
+for /d %%i in ("%APP_HOME%.tools\node-v24*-win-x64") do (
+    if exist "%%~fi\node.exe" set "PATH=%%~fi;%PATH%"
+)
+
+@rem The Codex workspace sandbox cannot write to the default user Gradle home.
+if defined CODEX_THREAD_ID if not defined GRADLE_USER_HOME if exist "%APP_HOME%.tools\gradle-home" set "GRADLE_USER_HOME=%APP_HOME%.tools\gradle-home"
+
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 
@@ -51,7 +67,7 @@ echo. 1>&2
 echo Please set the JAVA_HOME variable in your environment to match the 1>&2
 echo location of your Java installation. 1>&2
 
-"%COMSPEC%" /c exit 1
+exit /b 1
 
 :findJavaFromJavaHome
 set JAVA_HOME=%JAVA_HOME:"=%
@@ -65,18 +81,14 @@ echo. 1>&2
 echo Please set the JAVA_HOME variable in your environment to match the 1>&2
 echo location of your Java installation. 1>&2
 
-"%COMSPEC%" /c exit 1
+exit /b 1
 
 :execute
 @rem Setup the command line
 
 
 
-@rem Execute gradlew
-@rem endlocal doesn't take effect until after the line is parsed and variables are expanded
-@rem which allows us to clear the local environment before executing the java command
-endlocal & "%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -jar "%APP_HOME%\gradle\wrapper\gradle-wrapper.jar" %* & call :exitWithErrorLevel
-
-:exitWithErrorLevel
-@rem Use "%COMSPEC%" /c exit to allow operators to work properly in scripts
-"%COMSPEC%" /c exit %ERRORLEVEL%
+@rem Execute gradlew without ending the local scope first: the workspace-local
+@rem PATH and GRADLE_USER_HOME must be inherited by Gradle and its npm children.
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -jar "%APP_HOME%gradle\wrapper\gradle-wrapper.jar" %*
+exit /b %ERRORLEVEL%
