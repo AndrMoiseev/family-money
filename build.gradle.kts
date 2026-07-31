@@ -1,11 +1,39 @@
+import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.Sync
+import org.gradle.api.tasks.TaskAction
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JvmVendorSpec
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
+abstract class VerifyFilesEqual : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val committedFile: RegularFileProperty
+
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val generatedFile: RegularFileProperty
+
+    @TaskAction
+    fun verify() {
+        val committed = committedFile.get().asFile
+        val generated = generatedFile.get().asFile
+        if (!committed.readBytes().contentEquals(generated.readBytes())) {
+            throw GradleException(
+                "OpenAPI contract drift detected. Run the generateOpenApi task and commit the result.",
+            )
+        }
+    }
+}
 
 buildscript {
     dependencies {
@@ -124,23 +152,19 @@ val generateOpenApiForCheck = tasks.register<Exec>("generateOpenApiForCheck") {
     )
 }
 
-val verifyOpenApi = tasks.register<Exec>("verifyOpenApi") {
+val verifyOpenApi = tasks.register<VerifyFilesEqual>("verifyOpenApi") {
     description = "Fails when the committed OpenAPI differs from TypeSpec output."
     group = "verification"
     dependsOn(generateOpenApiForCheck)
-    val committedPath = openApiFile.asFile.absolutePath
-    val generatedPath = openApiCheckFile.get().asFile.absolutePath
-    if (System.getProperty("os.name").startsWith("Windows")) {
-        commandLine("cmd", "/c", "fc", "/b", committedPath, generatedPath)
-    } else {
-        commandLine("cmp", "--silent", committedPath, generatedPath)
-    }
+    mustRunAfter(generateOpenApi)
+    committedFile.set(openApiFile)
+    generatedFile.set(openApiCheckFile)
 }
 
 val generateBackendApi = tasks.register<GenerateTask>("generateBackendApi") {
     description = "Generates the Kotlin/Kora HTTP server contract into build/."
     group = "code generation"
-    dependsOn(generateOpenApi)
+    dependsOn(verifyOpenApi)
     generatorName.set("kora")
     inputSpec.set(openApiFile.asFile.absolutePath)
     outputDir.set(rawBackendApiDirectory.get().asFile.absolutePath)
@@ -207,7 +231,7 @@ $source"""
 val generateFrontendClient = tasks.register<Exec>("generateFrontendClient") {
     description = "Generates the TypeScript Fetch client and Zod schemas into build/."
     group = "code generation"
-    dependsOn(generateOpenApi, configureVueDemi)
+    dependsOn(verifyOpenApi, configureVueDemi)
     inputs.files(openApiFile, "openapi-ts.config.ts", "package.json", "package-lock.json")
     outputs.dir(layout.buildDirectory.dir("generated/frontend-client"))
     commandLine(npmCommand, "run", "api:generate-client")
