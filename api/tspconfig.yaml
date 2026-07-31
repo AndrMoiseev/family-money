@@ -1,0 +1,13 @@
+emit:
+  - "@typespec/openapi3"
+options:
+  "@typespec/openapi3":
+    emitter-output-dir: "{project-root}/generated"
+    file-type: yaml
+    new-line: lf
+    openapi-versions:
+      - "3.0.0"
+    operation-id-strategy: explicit-only
+    output-file: openapi.yaml
+    seal-object-schemas: true
+

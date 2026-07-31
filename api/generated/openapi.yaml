@@ -1,0 +1,39 @@
+openapi: 3.0.0
+info:
+  title: Family Money API
+  version: 0.1.0
+tags:
+  - name: System
+paths:
+  /api/v1/system/status:
+    get:
+      operationId: getSystemStatus
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+      tags:
+        - System
+components:
+  schemas:
+    SystemStatus:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - UP
+          description: Current application status.
+      additionalProperties:
+        not: {}
+      description: Operational status of the locally running application.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+    variables: {}
