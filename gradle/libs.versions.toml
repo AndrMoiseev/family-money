@@ -5,7 +5,8 @@ foojay-resolver = "1.0.0"
 jacoco = "0.8.14"
 junit = "5.13.4"
 kora = "1.2.18"
-kotlin = "2.4.10"
+kotlin = "2.2.20"
+ksp = "2.2.20-2.0.4"
 ktlint = "1.8.0"
 openapi-generator = "7.14.0"
 spotless = "7.2.1"
@@ -23,12 +24,12 @@ kora-http-server-undertow = { module = "ru.tinkoff.kora:http-server-undertow" }
 kora-json-module = { module = "ru.tinkoff.kora:json-module" }
 kora-logging-logback = { module = "ru.tinkoff.kora:logging-logback" }
 kora-openapi-generator = { module = "ru.tinkoff.kora:openapi-generator", version.ref = "kora" }
-kora-annotation-processors = { module = "ru.tinkoff.kora:annotation-processors", version.ref = "kora" }
+kora-symbol-processors = { module = "ru.tinkoff.kora:symbol-processors", version.ref = "kora" }
 postgresql = { module = "org.postgresql:postgresql", version = "42.7.7" }
 
 [plugins]
 detekt = { id = "dev.detekt", version.ref = "detekt" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
-kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

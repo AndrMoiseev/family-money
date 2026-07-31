@@ -127,6 +127,6 @@ data class SpaRequestPath(
     val value: String,
 )
 
-class SpaRequestPathMapper : HttpServerRequestMapper<SpaRequestPath> {
+class SpaRequestPathMapper : HttpServerRequestMapper<SpaRequestPath?> {
     override fun apply(request: HttpServerRequest): SpaRequestPath = SpaRequestPath(request.path())
 }
