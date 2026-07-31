@@ -10,4 +10,3 @@ options:
     operation-id-strategy: explicit-only
     output-file: openapi.yaml
     seal-object-schemas: true
-

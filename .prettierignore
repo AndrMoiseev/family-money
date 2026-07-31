@@ -1,0 +1,9 @@
+.agents/
+.codex/
+.git/
+.gradle/
+.tools/
+api/generated/
+build/
+frontend/dist/
+node_modules/

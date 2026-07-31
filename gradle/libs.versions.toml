@@ -1,10 +1,12 @@
 [versions]
 archunit = "1.4.1"
-detekt = "1.23.8"
+detekt = "2.0.0-alpha.5"
 foojay-resolver = "1.0.0"
+jacoco = "0.8.14"
 junit = "5.13.4"
 kora = "1.2.18"
 kotlin = "2.4.10"
+ktlint = "1.8.0"
 openapi-generator = "7.14.0"
 spotless = "7.2.1"
 
@@ -25,7 +27,7 @@ kora-annotation-processors = { module = "ru.tinkoff.kora:annotation-processors",
 postgresql = { module = "org.postgresql:postgresql", version = "42.7.7" }
 
 [plugins]
-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }

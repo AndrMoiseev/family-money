@@ -13,25 +13,30 @@ import ru.tinkoff.kora.http.server.common.handler.HttpServerRequestMapper
 
 @Component
 @HttpController
-class SpaController(private val resources: SpaResources) {
+class SpaController(
+    private val resources: SpaResources,
+) {
     fun index(): HttpServerResponse = serveIndex()
 
     @HttpRoute(method = HttpMethod.GET, path = "/*")
-    fun resource(@Mapping(SpaRequestPathMapper::class) requestedPath: SpaRequestPath): HttpServerResponse {
+    fun resource(
+        @Mapping(SpaRequestPathMapper::class) requestedPath: SpaRequestPath,
+    ): HttpServerResponse {
         val resourcePath = requestedPath.value.removePrefix("/")
-        if (!isSafePath(resourcePath) || isApiPath(resourcePath)) {
-            return notFound()
-        }
-
-        val resource = loadResource(resourcePath)
-        if (resource != null) {
-            return ok(resourcePath, resource)
-        }
-
-        return if (resourcePath.startsWith(ASSET_PATH_PREFIX) || resourcePath.substringAfterLast('/').contains('.')) {
+        return if (!isSafePath(resourcePath) || isApiPath(resourcePath)) {
             notFound()
         } else {
-            serveIndex()
+            serveResourceOrIndex(resourcePath)
+        }
+    }
+
+    private fun serveResourceOrIndex(resourcePath: String): HttpServerResponse {
+        val resource = loadResource(resourcePath)
+        return when {
+            resource != null -> ok(resourcePath, resource)
+            resourcePath.startsWith(ASSET_PATH_PREFIX) -> notFound()
+            resourcePath.substringAfterLast('/').contains('.') -> notFound()
+            else -> serveIndex()
         }
     }
 
@@ -40,10 +45,12 @@ class SpaController(private val resources: SpaResources) {
         return ok(INDEX_RESOURCE, index)
     }
 
-    private fun loadResource(resourcePath: String): ByteArray? =
-        resources.load(resourcePath)
+    private fun loadResource(resourcePath: String): ByteArray? = resources.load(resourcePath)
 
-    private fun ok(resourcePath: String, content: ByteArray): HttpServerResponse {
+    private fun ok(
+        resourcePath: String,
+        content: ByteArray,
+    ): HttpServerResponse {
         val cacheControl =
             if (resourcePath == INDEX_RESOURCE) {
                 "no-cache"
@@ -54,7 +61,7 @@ class SpaController(private val resources: SpaResources) {
             }
 
         return HttpServerResponse.of(
-            200,
+            HTTP_OK,
             HttpHeaders.of(
                 "cache-control",
                 cacheControl,
@@ -65,7 +72,7 @@ class SpaController(private val resources: SpaResources) {
         )
     }
 
-    private fun notFound(): HttpServerResponse = HttpServerResponse.of(404)
+    private fun notFound(): HttpServerResponse = HttpServerResponse.of(HTTP_NOT_FOUND)
 
     private fun isSafePath(resourcePath: String): Boolean =
         resourcePath.isNotBlank() &&
@@ -74,7 +81,8 @@ class SpaController(private val resources: SpaResources) {
             resourcePath.split('/').none { segment -> segment.isBlank() || segment == "." || segment == ".." }
 
     private fun isApiPath(resourcePath: String): Boolean =
-        resourcePath == API_PATH || resourcePath.startsWith(API_PATH_PREFIX)
+        resourcePath == API_PATH ||
+            resourcePath.startsWith(API_PATH_PREFIX)
 
     private fun contentType(resourcePath: String): String =
         when (resourcePath.substringAfterLast('.', missingDelimiterValue = "")) {
@@ -96,6 +104,8 @@ class SpaController(private val resources: SpaResources) {
         const val API_PATH = "api"
         const val API_PATH_PREFIX = "api/"
         const val ASSET_PATH_PREFIX = "assets/"
+        const val HTTP_NOT_FOUND = 404
+        const val HTTP_OK = 200
         const val INDEX_RESOURCE = "index.html"
     }
 }
@@ -113,7 +123,9 @@ class SpaResources {
             ?.use { it.readBytes() }
 }
 
-data class SpaRequestPath(val value: String)
+data class SpaRequestPath(
+    val value: String,
+)
 
 class SpaRequestPathMapper : HttpServerRequestMapper<SpaRequestPath> {
     override fun apply(request: HttpServerRequest): SpaRequestPath = SpaRequestPath(request.path())

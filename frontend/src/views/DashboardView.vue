@@ -14,7 +14,9 @@ const statusQuery = useQuery({
   retry: false,
 });
 
-const statusSeverity = computed(() => (statusQuery.isSuccess.value ? 'success' : 'secondary'));
+const statusSeverity = computed(() =>
+  statusQuery.isSuccess.value ? 'success' : 'secondary',
+);
 </script>
 
 <template>
@@ -23,8 +25,8 @@ const statusSeverity = computed(() => (statusQuery.isSuccess.value ? 'success' :
       <p class="eyebrow">Каркас приложения</p>
       <h1 id="dashboard-title">Семейные инвестиции в одном месте</h1>
       <p class="introduction">
-        Backend, API-контракт и frontend запускаются локально. Бизнес-функции будут
-        добавляться следующими вертикальными срезами.
+        Backend, API-контракт и frontend запускаются локально. Бизнес-функции
+        будут добавляться следующими вертикальными срезами.
       </p>
     </div>
 
@@ -39,8 +41,13 @@ const statusSeverity = computed(() => (statusQuery.isSuccess.value ? 'success' :
           />
         </div>
 
-        <Message v-if="statusQuery.isError.value" severity="warn" :closable="false">
-          Backend пока недоступен. Запустите приложение через корневую Gradle-команду.
+        <Message
+          v-if="statusQuery.isError.value"
+          severity="warn"
+          :closable="false"
+        >
+          Backend пока недоступен. Запустите приложение через корневую
+          Gradle-команду.
         </Message>
 
         <Button

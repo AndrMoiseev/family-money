@@ -17,4 +17,3 @@ interface Application :
 fun main() {
     KoraApplication.run(ApplicationGraph::graph)
 }
-

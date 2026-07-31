@@ -8,7 +8,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '@api': fileURLToPath(new URL('../build/generated/frontend-client', import.meta.url)),
+      '@api': fileURLToPath(
+        new URL('../build/generated/frontend-client', import.meta.url),
+      ),
     },
   },
   server: {
@@ -20,6 +22,11 @@ export default defineConfig({
     },
   },
   test: {
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+      reportsDirectory: '../build/reports/vitest',
+    },
     environment: 'jsdom',
     pool: 'threads',
   },

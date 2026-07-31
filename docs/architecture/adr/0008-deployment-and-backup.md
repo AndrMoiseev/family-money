@@ -67,4 +67,3 @@ backups. Это не первоначальный deployment; провайдер
   добавляют cold starts, двух провайдеров и deployment complexity.
 - Только локальные dumps и только VPS snapshots отклонены из-за общей failure
   domain с production.
-

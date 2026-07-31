@@ -1,6 +1,4 @@
-import {
-  getSystemStatus as requestSystemStatus,
-} from '@api/index';
+import { getSystemStatus as requestSystemStatus } from '@api/index';
 import type { SystemStatus } from '@api/index';
 import { zGetSystemStatusResponse } from '@api/zod.gen';
 
