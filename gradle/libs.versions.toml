@@ -14,6 +14,7 @@ archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref
 jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 kora-bom = { module = "ru.tinkoff.kora:kora-parent", version.ref = "kora" }
 kora-config-hocon = { module = "ru.tinkoff.kora:config-hocon" }
 kora-database-flyway = { module = "ru.tinkoff.kora:database-flyway" }
