@@ -1,10 +1,17 @@
 import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.Sync
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JvmVendorSpec
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
+buildscript {
+    dependencies {
+        classpath(libs.kora.openapi.generator)
+    }
+}
 
 plugins {
     application
@@ -33,7 +40,7 @@ kotlin {
         vendor.set(JvmVendorSpec.ADOPTIUM)
     }
     sourceSets.main {
-        kotlin.srcDir(layout.buildDirectory.dir("generated/backend-api/src/main/kotlin"))
+        kotlin.srcDir(layout.buildDirectory.dir("generated/backend-server"))
     }
 }
 
@@ -53,7 +60,6 @@ dependencies {
     implementation(libs.kora.http.server.undertow)
     implementation(libs.kora.json.module)
     implementation(libs.kora.logging.logback)
-    compileOnly(libs.jackson.annotations)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
@@ -72,6 +78,8 @@ val nodeCommand = if (System.getProperty("os.name").startsWith("Windows")) "node
 val openApiFile = layout.projectDirectory.file("api/generated/openapi.yaml")
 val openApiCheckDirectory = layout.buildDirectory.dir("generated/openapi-check")
 val openApiCheckFile = openApiCheckDirectory.map { it.file("openapi.yaml") }
+val rawBackendApiDirectory = layout.buildDirectory.dir("generated/backend-server-raw")
+val backendApiDirectory = layout.buildDirectory.dir("generated/backend-server")
 
 val npmCi = tasks.register<Exec>("npmCi") {
     description = "Installs the exact root npm workspace dependencies."
@@ -130,29 +138,70 @@ val verifyOpenApi = tasks.register<Exec>("verifyOpenApi") {
 }
 
 val generateBackendApi = tasks.register<GenerateTask>("generateBackendApi") {
-    description = "Generates Kotlin HTTP transport models into build/."
+    description = "Generates the Kotlin/Kora HTTP server contract into build/."
     group = "code generation"
     dependsOn(generateOpenApi)
-    generatorName.set("kotlin")
+    generatorName.set("kora")
     inputSpec.set(openApiFile.asFile.absolutePath)
-    outputDir.set(layout.buildDirectory.dir("generated/backend-api").get().asFile.absolutePath)
+    outputDir.set(rawBackendApiDirectory.get().asFile.absolutePath)
+    apiPackage.set("io.familymoney.generated.api")
     modelPackage.set("io.familymoney.generated.api.model")
-    globalProperties.set(
+    invokerPackage.set("io.familymoney.generated.api")
+    openapiNormalizer.set(
         mapOf(
-            "apis" to "false",
-            "models" to "",
-            "modelDocs" to "false",
-            "modelTests" to "false",
-            "supportingFiles" to "false",
+            "DISABLE_ALL" to "true",
         ),
     )
     configOptions.set(
         mapOf(
-            "dateLibrary" to "java8",
-            "serializationLibrary" to "jackson",
-            "sourceFolder" to "src/main/kotlin",
+            "mode" to "kotlin-server",
         ),
     )
+}
+
+val prepareBackendApi = tasks.register<Sync>("prepareBackendApi") {
+    description = "Prepares the generated Kora server contract for the temporary KAPT build."
+    group = "code generation"
+    dependsOn(generateBackendApi)
+    from(rawBackendApiDirectory)
+    into(backendApiDirectory)
+
+    doLast {
+        val nullableAdapterComponent =
+            Regex(
+                """(?m)^([ \t]*)@ru\.tinkoff\.kora\.common\.Component\R(?=\1class NullableJson(?:Writer|Reader)\b)""",
+            )
+        val nonNullResponseParameter =
+            Regex(
+                """(override fun apply\([^\r\n]+, rs: )([A-Za-z0-9_.]+ApiResponse)(\): HttpServerResponse)""",
+            )
+        var patchedAdapters = 0
+        var patchedResponseMappers = 0
+
+        destinationDir.walkTopDown().filter { it.extension == "kt" }.forEach { file ->
+            val source = file.readText()
+            patchedAdapters += nullableAdapterComponent.findAll(source).count()
+            patchedResponseMappers += nonNullResponseParameter.findAll(source).count()
+            val patched =
+                """@file:Suppress("REDUNDANT_CALL_OF_CONVERSION_METHOD")
+
+$source"""
+                    .replace(nullableAdapterComponent, "")
+                    .replace(nonNullResponseParameter, "$1$2?$3")
+                    .replace("when (rs)", "when (requireNotNull(rs))")
+                    .replace(Regex("""\brs\."""), "requireNotNull(rs).")
+            if (patched != source) {
+                file.writeText(patched)
+            }
+        }
+
+        check(patchedAdapters > 0) {
+            "Kora enum template changed: nullable JSON adapters were not found."
+        }
+        check(patchedResponseMappers > 0) {
+            "Kora response-mapper template changed: response parameters were not found."
+        }
+    }
 }
 
 val generateFrontendClient = tasks.register<Exec>("generateFrontendClient") {
@@ -222,7 +271,7 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 tasks.withType<KotlinCompile>().configureEach {
-    dependsOn(generateBackendApi)
+    dependsOn(prepareBackendApi)
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_25)
         allWarningsAsErrors.set(true)
