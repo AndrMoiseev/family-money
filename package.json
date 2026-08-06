@@ -1,0 +1,31 @@
+{
+  "name": "family-money",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": "24.x"
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "api:generate": "tsp compile api",
+    "api:generate-client": "openapi-ts",
+    "api:format": "tsp format api/main.tsp",
+    "api:format:check": "tsp format --check api/main.tsp",
+    "format:check": "prettier --check .",
+    "frontend:build": "npm --workspace frontend run build",
+    "frontend:dev": "npm --workspace frontend run dev",
+    "frontend:lint": "npm --workspace frontend run lint",
+    "frontend:test": "npm --workspace frontend run test",
+    "frontend:typecheck": "npm --workspace frontend run typecheck"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.99.0",
+    "@typespec/compiler": "1.14.0",
+    "@typespec/http": "1.14.0",
+    "@typespec/openapi": "1.14.0",
+    "@typespec/openapi3": "1.14.0",
+    "prettier": "3.9.6"
+  }
+}

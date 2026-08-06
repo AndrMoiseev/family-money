@@ -119,6 +119,9 @@ Gradle is the canonical entry point. On Windows use `gradlew.bat`; on Unix use
 
 - Run `build` before declaring an implementation complete.
 - Run focused tests during development, then the full relevant checks.
+- Use KSP for Kora code generation in Kotlin. KAPT may be used only as a
+  temporary diagnostic workaround; resolve KSP compatibility problems and
+  restore KSP before declaring the build bootstrap complete.
 - `check` must cover backend tests, ArchUnit, TypeSpec/OpenAPI drift, frontend
   typechecking, and frontend unit tests.
 - Playwright runs as a separate end-to-end CI job using Chromium for MVP.
@@ -128,6 +131,13 @@ Gradle is the canonical entry point. On Windows use `gradlew.bat`; on Unix use
   JSON, YAML, and Markdown formatting.
 - Treat coverage reports as diagnostics, not as a substitute for meaningful
   invariant and scenario tests.
+- Set explicit timeouts on agent tool calls: normally 10 seconds for file and
+  diagnostic commands, up to 60 seconds for builds and tests, and 5 seconds for
+  launching a background service. Split longer work into observable steps and
+  report progress at least once per minute.
+- Do not combine starting a persistent service and checking its health in one
+  blocking command. Start it in a hidden background process, return promptly,
+  and probe readiness with separate bounded commands.
 
 The repository is initially documentation-only. When bootstrapping the build,
 create these wrapper tasks and directory conventions before relying on ad-hoc
@@ -167,4 +177,3 @@ commands.
 - Documentation and ADRs are updated when behaviour or architecture changes.
 - No secrets, production data, IDE metadata, or unrelated local changes are
   included.
-
